@@ -1,0 +1,322 @@
+<div>
+  <canvas id="myChart"></canvas>
+  <canvas id="periodChart"></canvas>
+  <!--<button onclick="selectDate()" class="dropbtn">انتخاب فواصل زمانی</button>-->
+  <div style="direction: rtl;">
+    <label for="dog-names">انتخاب فواصل زمانی</label>
+    <select name="dateType" id="myDropdown" class="dropdown-content">
+      <option value="day" class="date-select">روز</option>
+      <option value="week" class="date-select">هفته</option>
+      <option value="month" class="date-select">ماه</option>
+      <option value="year" class="date-select">سال</option>
+    </select>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+    const ctx = document.getElementById('myChart');
+    const pctx = document.getElementById('periodChart');
+    //var ctx = canvas.getContext('2d');
+
+    let labels = [];
+    let nums = [];
+
+    //drawPeriodically();
+    drawCumulative();
+    var perChart = new Chart(document.getElementById("periodChart"));
+    drawPeriodically('day');
+
+    document.getElementById("myDropdown").addEventListener('change', function(e) {
+      console.log(document.getElementById("myDropdown").value);
+      drawPeriodically(document.getElementById("myDropdown").value);
+    })
+
+    function drawPeriodically(range) {
+      console.log('selected range: ', range);
+      perChart.destroy();
+      //document.getElementById("periodChart")?.remove();
+      //document.createElement('')
+      if (!range) {
+        range = 'day';
+      }
+      let labels = ["الان"]
+      let perDate = {
+        day: "روز",
+        week: "هفته",
+        month: "ماه",
+        year: "سال"
+      }
+      for (let i = 1; i < 7; i++) {
+        labels.push(i + " " + perDate[range] + " قبل")
+      }
+      labels = labels.reverse();
+      fetch('http://localhost:8050/getspecreport' + "?range=" + range)
+        // Parse the response as JSON
+        .then(response => response.json())
+        .then(data => {
+
+          let criticalQ = [];
+          let criticalA = [];
+          let implicitQ = [];
+          let implicitA = [];
+          let notincontextQ = [];
+          let notincontextA = [];
+          let topics = [];
+          let keywords = [];
+          let tags = [];
+          let ner = [];
+          let toxicity = [];
+          let allDays = ['امروز', 'دیروز', '2 روز قبل ', '3 روز قبل', '4 روز قبل', '5 روز قبل', '6 روز قبل'];
+          allDays = allDays.reverse();
+          console.log(data.resps);
+          const reversedData = data.resps.reverse();
+          reversedData.forEach(day => {
+            criticalQ.push(day.aggregations['criticalQuesSum'].value);
+            criticalA.push(day.aggregations['criticalAnsSum'].value);
+            implicitQ.push(day.aggregations['implicitQuesSum'].value);
+            implicitA.push(day.aggregations['implicitAnsSum'].value);
+            notincontextQ.push(day.aggregations['notincontextQuesSum'].value);
+            notincontextA.push(day.aggregations['notincontextAnsSum'].value);
+            toxicity.push(day.aggregations['toxicSum'].value)
+            topics.push(day.aggregations['topicsSum'].value)
+            ner.push(day.aggregations['nerSum'].value)
+            tags.push(day.aggregations['tagsSum'].value)
+            keywords.push(day.aggregations['keywordsAnsSum'].value);
+          })
+
+          perChart = new Chart(pctx, {
+            type: 'line',
+            data: {
+              labels: labels,//allDays,
+              datasets: [
+                {
+                  label: 'سوال انتقادی',
+                  data: criticalQ,
+                  fill: false,
+                  tension: 0.2
+                  //stack: 'stack 0'
+                  //borderColor: 'rgb(54, 162, 235)',
+                  //backgroundColor: '#efefef', //transparentize('rgb(54, 162, 235)', 0.5),
+                },
+                {
+                  label: 'جواب انتقادی',
+                  data: criticalA,
+                  fill: false,
+                  tension: 0.2
+                  //stack: 'stack 0'
+                  //borderColor: 'rgb(54, 162, 235)',
+                  //backgroundColor: '#efefef', //transparentize('rgb(54, 162, 235)', 0.5),
+                },
+                {
+                  label: "سوال ضمنی",
+                  data: implicitQ,
+                  fill: false,
+                  tension: 0.2
+                  //stack: 'stack 0'
+                },
+                {
+                  label: "جواب ضمنی",
+                  data: implicitA,
+                  fill: false,
+                  tension: 0.2
+                  //stack: 'stack 0'
+                },
+                {
+                  label: "پرسش خارج از متن",
+                  data: notincontextQ,
+                  fill: false,
+                  tension: 0.2
+                  //stack: 'stack 0'
+                },
+                {
+                  label: "پاخ خارج از متن",
+                  data: notincontextA,
+                  fill: false,
+                  tension: 0.2
+                  //stack: 'stack 0'
+                },
+                {
+                  label: "سمی بودگی",
+                  data: implicitQ,
+                  fill: false,
+                  tension: 0.2
+                  //stack: 'stack 0'
+                },
+                {
+                  label: "موضوعات",
+                  data: topics,
+                  fill: false,
+                  tension: 0.2
+                  //stack: 'stack 0'
+                },
+                {
+                  label: "موجودیت‌ها",
+                  data: ner,
+                  fill: false,
+                  tension: 0.2
+                  //stack: 'stack 0'
+                },
+                {
+                  label: "برچسب‌ها",
+                  data: tags,
+                  fill: false,
+                  tension: 0.2
+                  //stack: 'stack 0'
+                },
+                {
+                  label: "کلمات کلیدی",
+                  data: keywords,
+                  fill: false,
+                  tension: 0.2
+                  //stack: 'stack 0'
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              interaction: {
+                intersect: false,
+              },
+              scales: {
+                x: {
+                  //stacked: true,
+                },
+                y: {
+                  //stacked: true,
+                  position: 'right'
+                }
+              },
+              plugins: {
+                legend: {
+                  position: 'top',
+                },
+                title: {
+                  display: true,
+                  text: 'مجموعه همه برچسب‌ها'
+                }
+              }
+            }
+          });
+        }).catch(error => console.log(error));
+    }
+
+    function drawCumulative() {
+      fetch('http://localhost:8050/getreport')
+        // Parse the response as JSON
+        .then(response => response.json())
+
+        // Log the response to the console
+        .then(data => {
+          console.log(data)
+          let keys = Object.keys(data.aggregations);
+          keys.forEach(key => {
+            labels.push(key);
+            nums.push(data.aggregations[key]['value']);
+          });
+          let quesData = [];
+          let answData = [];
+          let partedLabels = [];
+          let keywordsData = [];
+          quesData.push(data.aggregations['criticalQuesSum'].value);
+          answData.push(data.aggregations['criticalAnsSum'].value);
+          keywordsData.push(0);
+          partedLabels.push("انتقادی");
+
+          quesData.push(data.aggregations['implicitQuesSum'].value);
+          answData.push(data.aggregations['implicitAnsSum'].value);
+          keywordsData.push(0);
+          partedLabels.push("ضمنی");
+
+          quesData.push(data.aggregations['notincontextQuesSum'].value);
+          answData.push(data.aggregations['notincontextAnsSum'].value);
+          keywordsData.push(0);
+          partedLabels.push("خارج از بافت");
+
+          keywordsData.push(data.aggregations['toxicSum'].value)
+          keywordsData.push(data.aggregations['topicsSum'].value)
+          keywordsData.push(data.aggregations['nerSum'].value)
+          keywordsData.push(data.aggregations['tagsSum'].value)
+          keywordsData.push(data.aggregations['keywordsAnsSum'].value)
+          quesData.push(0);
+          quesData.push(0);
+          quesData.push(0);
+          quesData.push(0);
+          quesData.push(0);
+          answData.push(0);
+          answData.push(0);
+          answData.push(0);
+          answData.push(0);
+          answData.push(0);
+          partedLabels.push("سمی بودگی");
+          partedLabels.push("موضوع");
+          partedLabels.push("موجودیت");
+          partedLabels.push("برچسب");
+          partedLabels.push("کلمه‌کیدی");
+
+          console.log('labels: ', labels);
+          console.log('nums: ', nums);
+
+          console.log('partedLabels: ', partedLabels);
+          console.log('quesData: ', quesData);
+          console.log('answData: ', answData);
+
+          new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels: partedLabels,
+              datasets: [
+                {
+                  label: 'سوال',
+                  data: quesData,
+                  //stack: 'stack 0'
+                  //borderColor: 'rgb(54, 162, 235)',
+                  //backgroundColor: '#efefef', //transparentize('rgb(54, 162, 235)', 0.5),
+                },
+                {
+                  label: 'جواب',
+                  data: answData,
+                  //stack: 'stack 0'
+                  //borderColor: 'rgb(54, 162, 235)',
+                  //backgroundColor: '#efefef', //transparentize('rgb(54, 162, 235)', 0.5),
+                },
+                {
+                  label: "قطعه",
+                  data: keywordsData,
+                  //stack: 'stack 0'
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              interaction: {
+                intersect: false,
+              },
+              scales: {
+                x: {
+                  //stacked: true,
+                },
+                y: {
+                  //stacked: true,
+                  position: 'right'
+                }
+              },
+              plugins: {
+                legend: {
+                  position: 'top',
+                },
+                title: {
+                  display: true,
+                  text: 'تعداد برچسب‌ها به شکل دوره‌ای'
+                }
+              }
+            }
+          });
+        })
+
+        // Handle any errors
+        .catch(error => console.log(error));
+    }
+
+
+  </script>
