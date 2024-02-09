@@ -114,6 +114,32 @@ async function getAnnsSummary(range){
             source: "!doc['toxicity.nsfw'].empty"
             }
         }
+        },
+        claims_critical: {
+            filter: {
+                term: {
+                    "critical.claim": true
+                }
+            }
+        },
+        claims_implicit: {
+            filter: {
+                term: {
+                    "implicit.claim": true
+                }
+            }
+        },
+        claims_notincontext: {
+            filter: {
+                term: {
+                    "notincontext.claim": true
+                }
+            }
+        },
+        implicit_type: {
+            terms: {
+              field: "implicit.type"
+            }
         }
     },
     size: 0

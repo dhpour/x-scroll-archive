@@ -1,5 +1,7 @@
 <div>
+  <div id="totalDocs" style="margin-top: 50px;"></div>
   <canvas id="myChart"></canvas>
+  <canvas id="myChart2"></canvas>
   <canvas id="periodChart"></canvas>
   <!--<button onclick="selectDate()" class="dropbtn">انتخاب فواصل زمانی</button>-->
   <div style="direction: rtl;">
@@ -17,17 +19,19 @@
   <script>
     const ctx = document.getElementById('myChart');
     const pctx = document.getElementById('periodChart');
-    //var ctx = canvas.getContext('2d');
+    const ctx2 = document.getElementById('myChart2');
 
     let labels = [];
     let nums = [];
 
     //drawPeriodically();
-    drawCumulative();
+    drawCumulativeQaA();
+    drawCumulativeKW()
+
     var perChart = new Chart(document.getElementById("periodChart"));
     drawPeriodically('day');
 
-    document.getElementById("myDropdown").addEventListener('change', function(e) {
+    document.getElementById("myDropdown").addEventListener('change', function (e) {
       console.log(document.getElementById("myDropdown").value);
       drawPeriodically(document.getElementById("myDropdown").value);
     })
@@ -201,7 +205,136 @@
         }).catch(error => console.log(error));
     }
 
-    function drawCumulative() {
+    function drawCumulativeQaA() {
+      fetch('http://localhost:8050/getreport')
+        // Parse the response as JSON
+        .then(response => response.json())
+
+        // Log the response to the console
+        .then(data => {
+          console.log(data)
+          document.querySelector("#totalDocs").innerHTML = "All of Annotation docs: <b>#" + data?.hits?.total?.value + "</b>";
+          let keys = Object.keys(data.aggregations);
+          keys.forEach(key => {
+            labels.push(key);
+            nums.push(data.aggregations[key]['value']);
+          });
+          let quesData = [];
+          let answData = [];
+          let partedLabels = [];
+          let keywordsData = [];
+          let secType = [];
+          quesData.push(data.aggregations['criticalQuesSum'].value);
+          answData.push(data.aggregations['criticalAnsSum'].value);
+          keywordsData.push(data.aggregations['claims_critical'].doc_count);
+          secType.push(0);
+          partedLabels.push("انتقادی");
+
+          quesData.push(data.aggregations['implicitQuesSum'].value);
+          answData.push(data.aggregations['implicitAnsSum'].value);
+          keywordsData.push(data.aggregations['claims_implicit'].doc_count);
+          let imp_type = 0;
+          data.aggregations['implicit_type'].buckets.forEach(bucket => {
+            if (bucket.key === "lang") {
+              imp_type = bucket.doc_count;
+            }
+          })
+          secType.push(imp_type);
+          partedLabels.push("ضمنی");
+
+          quesData.push(data.aggregations['notincontextQuesSum'].value);
+          answData.push(data.aggregations['notincontextAnsSum'].value);
+          keywordsData.push(data.aggregations['claims_notincontext'].doc_count);
+          secType.push(0);
+          partedLabels.push("خارج از بافت");
+
+          quesData.push(0);
+          answData.push(0);
+          keywordsData.push(
+            data.aggregations['claims_critical'].doc_count +
+            data.aggregations['claims_implicit'].doc_count +
+            data.aggregations['claims_notincontext'].doc_count
+          );
+          secType.push(0);
+          partedLabels.push("مجموع ادعاهای مورد پرسش قرار گرفته");
+
+
+          quesData.push(0);
+          answData.push(0);
+          secType.push(imp_type);
+          keywordsData.push(0);
+          partedLabels.push("پرسش و پاسخ زبانی")
+
+          console.log('labels: ', labels);
+          console.log('nums: ', nums);
+
+          console.log('partedLabels: ', partedLabels);
+          console.log('quesData: ', quesData);
+          console.log('answData: ', answData);
+
+          new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels: partedLabels,
+              datasets: [
+                {
+                  label: 'سوال',
+                  data: quesData,
+                  //stack: 'stack 0'
+                  //borderColor: 'rgb(54, 162, 235)',
+                  //backgroundColor: '#efefef', //transparentize('rgb(54, 162, 235)', 0.5),
+                },
+                {
+                  label: 'جواب',
+                  data: answData,
+                  //stack: 'stack 0'
+                  //borderColor: 'rgb(54, 162, 235)',
+                  //backgroundColor: '#efefef', //transparentize('rgb(54, 162, 235)', 0.5),
+                },
+                {
+                  label: "ادعا",
+                  data: keywordsData,
+                  //stack: 'stack 0'
+                },
+                {
+                  label: "زبانی",
+                  data: secType,
+                  //stack: 'stack 0'
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              interaction: {
+                intersect: false,
+              },
+              scales: {
+                x: {
+                  //stacked: true,
+                },
+                y: {
+                  //stacked: true,
+                  position: 'right'
+                }
+              },
+              plugins: {
+                legend: {
+                  position: 'top',
+                },
+                title: {
+                  display: true,
+                  text: 'تعداد برچسب‌ها به شکل دوره‌ای'
+                }
+              }
+            }
+          });
+        })
+
+        // Handle any errors
+        .catch(error => console.log(error));
+    }
+
+    function drawCumulativeKW() {
       fetch('http://localhost:8050/getreport')
         // Parse the response as JSON
         .then(response => response.json())
@@ -218,6 +351,7 @@
           let answData = [];
           let partedLabels = [];
           let keywordsData = [];
+          /*
           quesData.push(data.aggregations['criticalQuesSum'].value);
           answData.push(data.aggregations['criticalAnsSum'].value);
           keywordsData.push(0);
@@ -232,7 +366,7 @@
           answData.push(data.aggregations['notincontextAnsSum'].value);
           keywordsData.push(0);
           partedLabels.push("خارج از بافت");
-
+          */
           keywordsData.push(data.aggregations['toxicSum'].value)
           keywordsData.push(data.aggregations['topicsSum'].value)
           keywordsData.push(data.aggregations['nerSum'].value)
@@ -261,7 +395,7 @@
           console.log('quesData: ', quesData);
           console.log('answData: ', answData);
 
-          new Chart(ctx, {
+          new Chart(ctx2, {
             type: 'bar',
             data: {
               labels: partedLabels,
@@ -317,6 +451,4 @@
         // Handle any errors
         .catch(error => console.log(error));
     }
-
-
   </script>
