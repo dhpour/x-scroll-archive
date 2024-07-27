@@ -4,6 +4,7 @@
 // @version      0.1
 // @description  Intercepts HTTP responses and logs them for parsing
 // @author       You
+// @match        https://*.x.com/*
 // @match        https://*.twitter.com/*
 // @run-at       document-start
 // @grant        GM_xmlhttpRequest
@@ -155,7 +156,9 @@ function ExtractTweets(instructions){
                 if(entry.content.entryType === "TimelineTimelineItem"){
                     //console.log('6');
                     if(entry.content.itemContent.itemType === "TimelineTweet"){
-                        if(entry.content.itemContent.tweet_results.result?.__typename == "Tweet" || true){
+                        console.log('entry.content.itemContent.tweet_results.result?.__typename: ', entry.content.itemContent.tweet_results.result?.__typename);
+                        if(entry.content.itemContent.tweet_results.result?.__typename != "TweetTombstone"){  //  added 30/06/2024 12:27pc
+                        //if(entry.content.itemContent.tweet_results.result?.__typename == "Tweet" || true){ //deleted 30/06/2024 12:27pc
                             //console.log('7');
                             let user = {};
                             let tweet = {};
@@ -205,7 +208,9 @@ function ExtractTweets(instructions){
                         //console.log('result: ', item?.item?.itemContent?.tweet_results?.result);
 
                         if(item.item.itemContent.itemType === "TimelineTweet"){
-                            if(item.item.itemContent.tweet_results.result?.__typename == "Tweet" || true){
+                            console.log('item.item.itemContent.tweet_results.result?.__typename: ', item.item.itemContent.tweet_results.result?.__typename);
+                            if(item.item.itemContent.tweet_results.result?.__typename != "TweetTombstone"){  //  added 30/06/2024 12:27pc
+                            //if(item.item.itemContent.tweet_results.result?.__typename == "Tweet" || true){ //deleted 30/06/2024 12:27pc
                                 //item.item.itemContent.tweet_results.result
                                 let user = {};
                                 let tweet = {};
@@ -295,12 +300,14 @@ function ExtractSingleTweet(entry){
     delete tweet['user_id_str'];
     tweet['view_count'] = entry.views.count;
     //console.log('24');
+    console.log(tweet);
     return [tweet, user]
 }
 
 (function() {
     'use strict';
     // Save the real open
+    //console.log('HI THEREEEEEEEEEEEEEEE');
     const _open = XMLHttpRequest.prototype.open;
     //let lastRoll = [];
     let focusedTweet = {};
@@ -314,7 +321,8 @@ function ExtractSingleTweet(entry){
                 if(currentUrlsParts.length === 6 && currentUrlsParts[currentUrlsParts.length - 2] === "status"){
                     pageStatusId = currentUrlsParts[currentUrlsParts.length - 1];
                 }
-                if(this.responseURL.startsWith("https://twitter.com/i/api/graphql")){
+                if(this.responseURL.startsWith("https://twitter.com/i/api/graphql") ||
+                   this.responseURL.startsWith("https://x.com/i/api/graphql")){
                     //console.log('Response body:', this.responseText);
                     let timeline = getProperTimeline(JSON.parse(this.responseText));
                     if(!!timeline){
@@ -340,7 +348,8 @@ function ExtractSingleTweet(entry){
                         }
                     }
                 }
-                else if(this.responseURL.startsWith("https://twitter.com/i/api/1.1/strato/column/")){
+                else if(this.responseURL.startsWith("https://twitter.com/i/api/1.1/strato/column/") ||
+                        this.responseURL.startsWith("https://x.com/i/api/1.1/strato/column/")){
                     console.log('Translation url:', this.responseURL);
                     let raw = JSON.parse(this.responseText);
                     //for(let mainTweet of lastRoll){
