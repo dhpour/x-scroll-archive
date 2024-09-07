@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         X Data Scavenger
+// @name         X Scavenger
 // @namespace    http://tampermonkey.net/
 // @version      0.1
 // @description  Intercepts HTTP responses and logs them for parsing
