@@ -1,9 +1,0 @@
-node_modules
-media
-logs
-htmlSample
-.env
-xan-annotator-tampermonkey.js
-x-old-crawler-tampermonkey.js
-server-old-crawler.js
-.gitignore
