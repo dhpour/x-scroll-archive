@@ -1,7 +1,31 @@
 # XCROLL
 
-Archive all your scolls on X.
+Archive all your scrolls on X.
 
-Intercepts transactions between the Twitter web client and server to capture viewed tweets and sends them for storage.
+## Description
 
-It's like a personal X archive; Anything you see will be stored in your database.
+It catches all recieved X's posts/tweets and stores it in elasticsearch/opensearch.
+
+## How to run
+
+You need to run `x-browser.js` script in `tampermonkey` on Chrome or FireFox browsers.
+
+For server-side:
+
+```
+npm install
+``` 
+
+Configure your `elasticsearch` path, port, index and server port in `.env` file:
+
+```
+TWEETS_INDEX=<TWEET_INDEX>
+ELASTIC=<ELASTIC_PATH>
+BACKPATH=<BACK_PATH>
+BACKPORT=<BACK_PORT>
+```
+
+Run server:
+```
+node server.js
+```
