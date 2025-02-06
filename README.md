@@ -4,7 +4,7 @@ Archive all your scrolls on X.
 
 ## Description
 
-It catches all recieved X's posts/tweets and stores it in elasticsearch/opensearch.
+It catches all recieved X's posts/tweets and stores them on `elasticsearch`.
 
 ## How to run
 
