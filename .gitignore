@@ -6,3 +6,4 @@ htmlSample
 xan-annotator-tampermonkey.js
 x-old-crawler-tampermonkey.js
 server-old-crawler.js
+.gitignore
