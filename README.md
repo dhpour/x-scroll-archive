@@ -1,4 +1,4 @@
-# XROLL
+# XCROLL
 
 Archive all your scolls on X.
 
