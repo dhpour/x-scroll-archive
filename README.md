@@ -8,7 +8,7 @@ It captures all recieved X's posts/tweets and stores them in `elasticsearch`.
 
 ## How to run
 
-You need to run the `x-browser.js` script in `Tampermonkey` on Chrome or FireFox browsers.
+You need to run the `x-browser.js` script in [`Tampermonkey`](https://www.tampermonkey.net/) on Chrome or FireFox browsers.
 
 For the server side:
 
