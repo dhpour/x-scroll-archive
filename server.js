@@ -25,6 +25,8 @@ const elastic = new Client({
     }
 });
 
+const LANG = process.env.LANG?.split(",") || [];
+console.log('Languages: ', LANG);
 /*elastic.get({
     index: 'newsarchive_web',
     id: "1733490801811054910",
@@ -92,7 +94,8 @@ app.post('/bulk', async function(req, res) {
         bulk[i]['add_date'] = dateFormat4elastic(new Date());
         //bulk[i]['created_at'] = dateFormat4elastic(new Date(bulk[i]['created_at']));
     }
-    const operations = bulk.flatMap(doc => ["fa", "und" ].includes(doc['lang']) ? [ { create: { _index: process.env.TWEETS_INDEX, _id: doc['id'] } }, doc] : []);
+    const operations = bulk.flatMap(doc => (LANG.length === 0 || LANG.includes(doc['lang'])) ? [ { create: { _index: process.env.TWEETS_INDEX, _id: doc['id'] } }, doc] : []);
+    //bulk.forEach(doc => (LANG.length === 0 || LANG.includes(doc['lang'])) ? console.log('lang: ', doc['lang']) : console.log('lang: ', []));
     for(let i in operations){
         //console.log('op: ', i, i%2, Number(i)+1, operations.length);
         //console.log('op2: ', i%2);
