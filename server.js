@@ -158,7 +158,7 @@ app.post('/translate', async function(req, res) {
         return res.status(400).send({msg: 'error'})
     }
 
-    if(trans.destinationLanguage === "fa"){}
+    //if(trans.destinationLanguage === "fa"){}
     elastic.update({
         index: process.env.TWEETS_INDEX,
         id: trans.id,
