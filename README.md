@@ -29,3 +29,10 @@ Run the server:
 ```
 node server.js
 ```
+
+## Configuration
+For archiving only specific languages add them to `LANG` variable in `.env` file. for archiving all posts do not add `LANG` variable to your `.env` file:
+
+```
+LANG=fa,und,ar
+```
