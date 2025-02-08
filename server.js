@@ -160,10 +160,26 @@ app.post('/bulk', async function(req, res) {
           }
         })
         logger.error('/buk: ' + JSON.stringify(erroredDocuments));
-        console.log(erroredDocuments)
+        //console.log(erroredDocuments)
     }
-    //console.log('bulk_result: ', bulkResponse);
     logger.info('/buk: ' + JSON.stringify(bulkResponse.items));
+    bulkResponse?.items?.forEach(doc => {
+        if(doc.hasOwnProperty('create')){
+            if([200, 201].includes(doc.create.status)){
+                console.log(`doc create status: ${JSON.stringify(doc.create)}`);
+            }
+            else{
+                console.log(`doc create status: ${doc.create.status}, reason: ${doc.create.error.reason}`);
+            }
+        }else if(doc.hasOwnProperty('update')){
+            if([200, 201].includes(doc.update.status)){
+                console.log(`doc update status: ${JSON.stringify(doc.update)}`);
+            }
+            else{
+                console.log(`doc update status: ${doc.update.status}, reason: ${doc.update.error.reason}`);
+            }
+        }
+    })
     return res.status(200).send({result: bulkResponse.items})
 })
 
