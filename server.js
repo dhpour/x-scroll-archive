@@ -1,8 +1,5 @@
-//var cors            = require('cors'),
 var http           = require('http'),
     express         = require('express'),
-    //errorhandler    = require('errorhandler'),
-    //dotenv          = require('dotenv'),
     bodyParser      = require('body-parser'),
     fs              = require('fs');
 
@@ -11,10 +8,6 @@ const { Client } = require('@elastic/elasticsearch');
 const logger = require('./Logger');
 
 require('dotenv').config();
-//console.log(process.env);
-
-//const ANNOTATION_INDEX = 'xannsample';
-//const TWEETS_INDEX = "newsarchive_gql";
 
 var app = express();
 
@@ -27,12 +20,6 @@ const elastic = new Client({
 
 const LANG = process.env.LANG?.split(",") || [];
 console.log('Languages: ', LANG);
-/*elastic.get({
-    index: 'newsarchive_web',
-    id: "1733490801811054910",
-}).then(out => {
-    console.log('document: ', out);
-})*/
 
 var corsOptions = {
     origin: process.env.FRONT,
@@ -53,15 +40,7 @@ app.use(bodyParser.json({limit: '50mb'}));
 //app.use(cors());
 
 function dateFormat4elastic(date){
-    /*
-    makes a localized datetime format
-    e.g.
-        let add_date = new Date();
-    e.g.
-        //converts ISOString (twitter) to localized format
-        let created_at = new Date(tweet['created_at']);
-        created_at = dateFormat4elastic(created_at);
-    */
+
     let dateOptions = { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', year: 'numeric', hour12: false }
     let stringDate = date.toLocaleDateString('en-US', dateOptions);
     stringDate = stringDate.replace(/,/g, '');
@@ -83,24 +62,18 @@ function dateFormat4elastic(date){
 
 app.post('/bulk', async function(req, res) {
 
-    //console.log('bulk: ', req.body);
     let bulk = 'bulk' in req.body ? req.body.bulk : null;
     if(!bulk || bulk.length === 0){
         logger.warn('/bulk: bulk is empt');
         return res.status(400).send({msg: 'error'})
     }
     for(let i=0; i<bulk.length;i++){
-        //bulk[i]['add_date'] = (new Date().toISOString());
         bulk[i]['add_date'] = dateFormat4elastic(new Date());
-        //bulk[i]['created_at'] = dateFormat4elastic(new Date(bulk[i]['created_at']));
     }
     const operations = bulk.flatMap(doc => (LANG.length === 0 || LANG.includes(doc['lang'])) ? [ { create: { _index: process.env.TWEETS_INDEX, _id: doc['id'] } }, doc] : []);
     //bulk.forEach(doc => (LANG.length === 0 || LANG.includes(doc['lang'])) ? console.log('lang: ', doc['lang']) : console.log('lang: ', []));
     for(let i in operations){
-        //console.log('op: ', i, i%2, Number(i)+1, operations.length);
-        //console.log('op2: ', i%2);
         if(i%2 == 0 && Number(i)+1 < operations.length){
-            //console.log('len: ', operations[Number(i)+1].full_text?.length);
             if(operations[Number(i)+1]?.display_text_range[1] >= 280 || operations[Number(i)+1]?.CommunityNote){
                 let tmp = JSON.parse(JSON.stringify(operations[i]));
                 operations[i] = {
@@ -136,7 +109,6 @@ app.post('/bulk', async function(req, res) {
             }
         }
     }
-    //console.log(operations);
     if(operations.length == 0){
         logger.info('/bulk: nothing to add');
         return res.status(200).send({result: 'nothing to add'})
@@ -149,9 +121,6 @@ app.post('/bulk', async function(req, res) {
           const operation = Object.keys(action)[0]
           if (action[operation].error) {
             erroredDocuments.push({
-              // If the status is 429 it means that you can retry the document,
-              // otherwise it's very likely a mapping error, and you should
-              // fix the document before to try it again.
               status: action[operation].status,
               error: action[operation].error,
               operation: operations[i * 2],
@@ -160,7 +129,6 @@ app.post('/bulk', async function(req, res) {
           }
         })
         logger.error('/buk: ' + JSON.stringify(erroredDocuments));
-        //console.log(erroredDocuments)
     }
     logger.info('/buk: ' + JSON.stringify(bulkResponse.items));
     bulkResponse?.items?.forEach(doc => {
@@ -184,8 +152,6 @@ app.post('/bulk', async function(req, res) {
 })
 
 app.post('/translate', async function(req, res) {
-
-    //console.log('tweet: ', req.body)
     let trans = 'trans' in req.body ? req.body.trans : null;
     if(!trans){
         logger.warn('/translate: trans is empty');
@@ -221,13 +187,6 @@ app.post('/translate', async function(req, res) {
             }
         }
     }).then((outdoc) => {
-        //console.log('pos_response: ', outdoc)
-
-        //detect if no changes happened
-        /*if(!tweet.hasOwnProperty("in_reply_to_status_id_str") && !tweet.hasOwnProperty("original_text") && outdoc['result'] != 'created')
-        {
-                outdoc['result'] = "noop";
-        }*/
         logger.info('/translate: ' + JSON.stringify(outdoc.result));
         return res.status(200).send({result: outdoc.result});
     }).catch((err) => {
