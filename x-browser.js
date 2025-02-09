@@ -39,7 +39,7 @@ function submitTweet(data, type){
         onload: function(response) {
             if([200, 201].includes(response.status)){
                 let result = JSON.parse(response.responseText);
-                console.log('result: ', result.result);
+                console.log('result: ', result?.result?.length);
                 if(typeof(result.result) === "string"){
                     if(result.result == "created"){
                         showNotif(9989, result.result);
@@ -213,7 +213,7 @@ function ExtractTweets(instructions){
 
         }
     }
-    console.log('tweets: ', tweets);
+    //console.log('tweets: ', tweets);
     console.log('tweets.length: ', tweets.length);
 
     console.log('users.length: ', users.length);
@@ -259,7 +259,7 @@ function ExtractSingleTweet(entry){
     delete tweet['user_id_str'];
     tweet['view_count'] = entry.views.count;
 
-    console.log(tweet);
+    //console.log(tweet);
     return [tweet, user]
 }
 
@@ -283,7 +283,7 @@ function ExtractSingleTweet(entry){
                     let timeline = getProperTimeline(JSON.parse(this.responseText));
                     if(!!timeline){
                         console.log('Request URL:', this.responseURL);
-                        console.log(timeline);
+                        //console.log(timeline);
                         let tweetsAndUsers = ExtractTweets(timeline?.instructions);
                         let tweets = tweetsAndUsers[0];
                         let users = tweetsAndUsers[1];
