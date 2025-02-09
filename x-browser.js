@@ -29,15 +29,8 @@ function showNotif(icon, msg, bulk=false){
     },bulk?2500:2000)
 }
 function submitTweet(data, type){
-    //console.log(3, link);
-    //console.log('DATE:::::::::::::::', data);
-    /*data.bulk.forEach(tweet => {
-        console.log('DATE:::::::::::::::', tweet.id_str, tweet.created_at);
-    });*/
-
     GM_xmlhttpRequest({
         method: "POST",
-        //url: 'https://ravazi.com/webcatchtweet?tweet_link=' + link,
         url: type == 'translate' ? 'http://localhost:8050/translate' : 'http://localhost:8050/bulk',
         data: JSON.stringify(data),
         headers: {
@@ -65,16 +58,11 @@ function submitTweet(data, type){
                     let updated = 0;
                     let duplicate = 0;
                     let err = 0;
-                    //console.log('result: ', result.result);
                     for(let i=0; i<result.result.length;i++){
-                        //console.log(i, result.result[i]['index']);
-                        //console.log(i, Object.keys(result.result[i]));
                         if([200, 201].includes(result.result[i]?.create?.status)){
-                           //console.log('c ', result.result[i]['index'].result)
                            created += 1;
                         }
                         else if([200, 201].includes(result.result[i]?.update?.status)){
-                           //console.log('c ', result.result[i]['index'].result)
                            if(result.result[i]?.update?.result === "noop"){
                                duplicate += 1
                            }
@@ -83,7 +71,6 @@ function submitTweet(data, type){
                            }
                         }
                         else if(result.result[i]['create']?.status === 409){
-                            //console.log('u ', result.result[i]['index'].result)
                            duplicate += 1;
                         }
                         else{
@@ -144,32 +131,21 @@ function getProperTimeline(timeline){
 function ExtractTweets(instructions){
     let tweets = []
     let users = [];
-    //console.log('1');
     for(let addEntries of instructions){
-        //console.log('2');
         if(addEntries.type === "TimelineAddEntries"){
-            //console.log('3');
             let entries = addEntries.entries;
-            //console.log('4');
             for(let entry of entries){
-                //console.log('5');
                 if(entry.content.entryType === "TimelineTimelineItem"){
-                    //console.log('6');
                     if(entry.content.itemContent.itemType === "TimelineTweet"){
                         console.log('entry.content.itemContent.tweet_results.result?.__typename: ', entry.content.itemContent.tweet_results.result?.__typename);
                         if(entry.content.itemContent.tweet_results.result?.__typename != "TweetTombstone"){  //  added 30/06/2024 12:27pc
-                        //if(entry.content.itemContent.tweet_results.result?.__typename == "Tweet" || true){ //deleted 30/06/2024 12:27pc
-                            //console.log('7');
                             let user = {};
                             let tweet = {};
-                            //console.log('to23', entry.content.itemContent.tweet_results.result);
                             let res = ExtractSingleTweet(JSON.parse(JSON.stringify(entry.content.itemContent.tweet_results.result)))
                             tweet = res[0];
                             user = res[1];
-                            //console.log('8');
                             if(tweet['lang'] === "fa" || true){
                                 if(entry.content.itemContent.tweet_results.result?.quoted_status_result){
-                                    //console.log('9');
                                     let quser = {};
                                     let qtweet = {};
                                     let res2 = ExtractSingleTweet(JSON.parse(JSON.stringify(entry.content.itemContent.tweet_results.result.quoted_status_result.result)))
@@ -177,35 +153,22 @@ function ExtractTweets(instructions){
                                     quser = res2[1];
                                     tweets.push(qtweet);
                                     if(!!quser){
-                                        //console.log('10');
                                         users.push(quser);
                                     }
                                 }
-                                //console.log('11');
                                 tweets.push(tweet);
                                 if(!!user){
-                                    //console.log('12');
                                     users.push(user);
                                 }
-                                //console.log('13');
-                                //console.log(entry.content.itemContent.tweet_results.result);
                             }
                         }
                     }
                     else{
-                        //console.log('15');
                         console.log('NoneTweet: ', entry.content.itemContent.itemType);
                     }
-                    //console.log('16');
-                    //console.log(entry);
                 }
                 else if(entry.content.entryType === "TimelineTimelineModule") {
-                    //console.log('17');
-                    //console.log('length: ', entry?.content?.items?.length);
                     for(let item of entry.content.items){
-                        //console.log('18');
-                        //console.log('item:', item);
-                        //console.log('result: ', item?.item?.itemContent?.tweet_results?.result);
 
                         if(item.item.itemContent.itemType === "TimelineTweet"){
                             console.log('item.item.itemContent.tweet_results.result?.__typename: ', item.item.itemContent.tweet_results.result?.__typename);
@@ -242,40 +205,36 @@ function ExtractTweets(instructions){
                         }
 
                     }
-                    //console.log('19');
-                    //console.log('Module: ', entry);
                 }
                 else{
-                    //console.log('20');
                     console.log('Unknown: ', entry);
                 }
             }
-            //console.log('');
+
         }
     }
     console.log('tweets: ', tweets);
     console.log('tweets.length: ', tweets.length);
-    //console.log('users: ', users);
+
     console.log('users.length: ', users.length);
     return [tweets, users]
 }
 
 function ExtractSingleTweet(entry){
-    //console.log('21');
+
     let user = {};
-    //if(!entry?.core && !entry?.legacy){
+
     if(entry?.tweet){
         console.log('tweet instead of legacy is available!');
         entry = entry?.tweet;
     }
-    //}
+
     if(entry?.core){
-        //console.log('22');
          user = JSON.parse(JSON.stringify(entry.core.user_results.result.legacy));
          user['user_id'] = entry.core.user_results.result.rest_id;
          delete entry.core;
     }
-    //console.log('23');
+
     let tweet = JSON.parse(JSON.stringify(entry.legacy))
     let cNote = {};
     if(entry?.birdwatch_pivot){
@@ -299,17 +258,15 @@ function ExtractSingleTweet(entry){
     tweet["id"] = tweet["id_str"];
     delete tweet['user_id_str'];
     tweet['view_count'] = entry.views.count;
-    //console.log('24');
+
     console.log(tweet);
     return [tweet, user]
 }
 
 (function() {
     'use strict';
-    // Save the real open
-    //console.log('HI THEREEEEEEEEEEEEEEE');
     const _open = XMLHttpRequest.prototype.open;
-    //let lastRoll = [];
+
     let focusedTweet = {};
     let pageStatusId = '';
     // Override the native open
@@ -323,7 +280,6 @@ function ExtractSingleTweet(entry){
                 }
                 if(this.responseURL.startsWith("https://twitter.com/i/api/graphql") ||
                    this.responseURL.startsWith("https://x.com/i/api/graphql")){
-                    //console.log('Response body:', this.responseText);
                     let timeline = getProperTimeline(JSON.parse(this.responseText));
                     if(!!timeline){
                         console.log('Request URL:', this.responseURL);
@@ -340,7 +296,6 @@ function ExtractSingleTweet(entry){
                                    }
                                }
                               }
-                            //lastRoll = JSON.parse(JSON.stringify(tweets));
                             submitTweet({bulk: tweets}, 'bulk');
                         }
                         else{
@@ -352,8 +307,7 @@ function ExtractSingleTweet(entry){
                         this.responseURL.startsWith("https://x.com/i/api/1.1/strato/column/")){
                     console.log('Translation url:', this.responseURL);
                     let raw = JSON.parse(this.responseText);
-                    //for(let mainTweet of lastRoll){
-                    //console.log('mainTweet: ', mainTweet);
+
                     if(focusedTweet?.id == raw.id_str){
                         focusedTweet['original_text'] = focusedTweet['full_text'];
                         focusedTweet['original_lang'] = focusedTweet['lang'];
@@ -367,22 +321,11 @@ function ExtractSingleTweet(entry){
                     else{
                         console.log('cannot find main tweet');
                     }
-                    //}
-                    /*let translation = {
-                        id: raw?.id_str,
-                        translation: raw?.translation,
-                        destinationLanguage: raw?.destinationLanguage,
-                        sourceLanguage: raw?.sourceLanguage
-                    }*/
                     console.log('Translation:', JSON.parse(this.responseText));
-                    //console.log('Translation:', translation);
-                    //submitTweet({trans: translation}, 'translate');
                 }
-                // Do any parsing or logging here
             }
         }, false);
 
-        // Proceed with the actual open using saved arguments
         _open.apply(this, arguments);
     };
 
