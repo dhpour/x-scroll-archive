@@ -4,7 +4,7 @@ Archive all your scrolls on X.
 
 ## Description
 
-It captures all recieved X's posts/tweets and stores them in `elasticsearch`.
+It captures all recieved X's posts/tweets and stores them in `elasticsearch`. You can set up any other method of storage you want in `server.js`.
 
 ## How to run
 
