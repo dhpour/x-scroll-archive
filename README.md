@@ -31,7 +31,7 @@ node server.js
 ```
 
 ## Configuration
-To archive only specific languages, add them to `LANG` variable in `.env` file. To archive all posts, do not add `LANG` variable in your `.env` file:
+To archive only specific languages, add them to `LANG` variable in `.env` file. To archive all posts, remove the `LANG` variable from your `.env` file:
 
 ```
 LANG=fa,und,ar
