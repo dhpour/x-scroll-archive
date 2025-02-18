@@ -125,6 +125,14 @@ function getProperTimeline(timeline){
             return res.result?.community_timeline?.timeline
         }
     }
+    else if(tl?.search_by_raw_query?.search_timeline){
+        console.log('tl?.search_by_raw_query?.search_timeline');
+        return tl?.search_by_raw_query?.search_timeline?.timeline
+    }
+    else{
+        console.log('no timeline detected:');
+        console.log(timeline);
+    }
     return null
 }
 
@@ -145,7 +153,7 @@ function ExtractTweets(instructions){
                             tweet = res[0];
                             user = res[1];
                             if(tweet['lang'] === "fa" || true){
-                                if(entry.content.itemContent.tweet_results.result?.quoted_status_result){
+                                if(entry.content.itemContent.tweet_results.result?.quoted_status_result?.result){
                                     let quser = {};
                                     let qtweet = {};
                                     let res2 = ExtractSingleTweet(JSON.parse(JSON.stringify(entry.content.itemContent.tweet_results.result.quoted_status_result.result)))
