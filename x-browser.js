@@ -28,6 +28,31 @@ function showNotif(icon, msg, bulk=false){
         document.body.removeChild(node);
     },bulk?2500:2000)
 }
+
+// Static notification with exit button for server down scenario
+function showServerDownNotif() {
+    // Check if notification already exists
+    if (document.getElementById('server-down-notif')) {
+        return; // Notification already shown
+    }
+    
+    let node = document.createElement("div");
+    node.id = 'server-down-notif';
+    node.style.cssText = "bottom: 100px; left: 10px; position: fixed; background-color: #ff6b6b; color: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); z-index: 10000; font-family: Arial, sans-serif;";
+    
+    let closeBtn = document.createElement("button");
+    closeBtn.innerHTML = "×";
+    closeBtn.style.cssText = "position: absolute; top: 5px; left: 5px; background: none; border: none; color: white; font-size: 18px; cursor: pointer; font-weight: bold;";
+    closeBtn.onclick = function() {
+        document.body.removeChild(node);
+    };
+    
+    node.innerHTML = '<p style="margin: 0 15px 0 0;"><strong>' + String.fromCodePoint(9888) + ' خطای اتصال به سرور</strong></p>' +
+                      '<p style="margin: 10px 0 0 0; font-size: 14px;">اتصال به سرور محلی با خطا مواجه شد. لطفاً از صحت سرور محلی خود مطمئن شوید.</p>';
+    node.appendChild(closeBtn);
+    document.body.appendChild(node);
+}
+
 function submitTweet(data, type){
     GM_xmlhttpRequest({
         method: "POST",
@@ -88,13 +113,21 @@ function submitTweet(data, type){
             }
             else{
                 showNotif(10060, response.statusText);
+                // Show server down notification for non-successful status codes
+                showServerDownNotif();
             }
         },
         onerror: function(err){
             console.log(err);
+            // Show server down notification on connection errors
+            showServerDownNotif();
+        },
+        ontimeout: function() {
+            console.log("Request timed out");
+            // Show server down notification on timeouts
+            showServerDownNotif();
         }
     });
-
 }
 
 function getProperTimeline(timeline){
