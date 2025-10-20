@@ -4,18 +4,16 @@ var http           = require('http'),
     fs              = require('fs');
 
 var cors = require('cors');
-const { Client } = require('@elastic/elasticsearch');
+//const { Client } = require('@elastic/elasticsearch');
+const { Client } = require('@opensearch-project/opensearch');
 const logger = require('./Logger');
 
 require('dotenv').config();
 
 var app = express();
 
-const elastic = new Client({
-    node: process.env.ELASTIC,
-    tls: {
-        rejectUnauthorized: false
-    }
+const opensearch = new Client({
+    node: process.env.ELASTIC
 });
 
 const LANG = process.env.LANG?.split(",") || [];
@@ -60,18 +58,22 @@ function dateFormat4elastic(date){
     return cur
 }
 
+// Replace your Elasticsearch client import with:
+// const { Client } = require('@opensearch-project/opensearch');
+// const opensearch = new Client({ node: 'http://localhost:9200' });
+
 app.post('/bulk', async function(req, res) {
 
     let bulk = 'bulk' in req.body ? req.body.bulk : null;
     if(!bulk || bulk.length === 0){
-        logger.warn('/bulk: bulk is empt');
+        logger.warn('/bulk: bulk is empty');
         return res.status(400).send({msg: 'error'})
     }
     for(let i=0; i<bulk.length;i++){
         bulk[i]['add_date'] = dateFormat4elastic(new Date());
     }
     const operations = bulk.flatMap(doc => (LANG.length === 0 || LANG.includes(doc['lang'])) ? [ { create: { _index: process.env.TWEETS_INDEX, _id: doc['id'] } }, doc] : []);
-    //bulk.forEach(doc => (LANG.length === 0 || LANG.includes(doc['lang'])) ? console.log('lang: ', doc['lang']) : console.log('lang: ', []));
+    
     for(let i in operations){
         if(i%2 == 0 && Number(i)+1 < operations.length){
             if(operations[Number(i)+1]?.display_text_range[1] >= 280 || operations[Number(i)+1]?.CommunityNote){
@@ -104,20 +106,25 @@ app.post('/bulk', async function(req, res) {
                         }
                     },
                     upsert: operations[Number(i)+1]
-                    //doc_as_upsert: true
                 }
             }
         }
     }
+    
     if(operations.length == 0){
         logger.info('/bulk: nothing to add');
         return res.status(200).send({result: 'nothing to add'})
     }
-    const bulkResponse = await elastic.bulk({ refresh: true, operations });
+    
+    // OpenSearch bulk API - changed 'operations' to 'body'
+    const bulkResponse = await opensearch.bulk({ 
+        refresh: true, 
+        body: operations 
+    });
 
-    if (bulkResponse.errors) {
+    if (bulkResponse.body.errors) {
         const erroredDocuments = []
-        bulkResponse.items.forEach((action, i) => {
+        bulkResponse.body.items.forEach((action, i) => {
           const operation = Object.keys(action)[0]
           if (action[operation].error) {
             erroredDocuments.push({
@@ -128,10 +135,11 @@ app.post('/bulk', async function(req, res) {
             })
           }
         })
-        logger.error('/buk: ' + JSON.stringify(erroredDocuments));
+        logger.error('/bulk: ' + JSON.stringify(erroredDocuments));
     }
-    logger.info('/buk: ' + JSON.stringify(bulkResponse.items));
-    bulkResponse?.items?.forEach(doc => {
+    
+    logger.info('/bulk: ' + JSON.stringify(bulkResponse.body.items));
+    bulkResponse.body?.items?.forEach(doc => {
         if(doc.hasOwnProperty('create')){
             if([200, 201].includes(doc.create.status)){
                 console.log(`doc create status: ${JSON.stringify(doc.create)}`);
@@ -148,7 +156,7 @@ app.post('/bulk', async function(req, res) {
             }
         }
     })
-    return res.status(200).send({result: bulkResponse.items})
+    return res.status(200).send({result: bulkResponse.body.items})
 })
 
 app.post('/translate', async function(req, res) {
@@ -158,43 +166,45 @@ app.post('/translate', async function(req, res) {
         return res.status(400).send({msg: 'error'})
     }
 
-    //if(trans.destinationLanguage === "fa"){}
-    elastic.update({
+    // OpenSearch update API - wrapped script and params in 'body'
+    opensearch.update({
         index: process.env.TWEETS_INDEX,
         id: trans.id,
-        script: {
-            lang: "painless",
-            source: `
-                boolean flag = false;
-                if(params.containsKey('translation')){
-                    ctx._source.original_text = ctx._source.full_text;
-                    ctx._source.original_lang = ctx._source.lang;
-                    ctx._source.full_text = params.translation;
-                    ctx._source.lang = params.destinationLanguage;
-                    flag = true;
+        body: {
+            script: {
+                lang: "painless",
+                source: `
+                    boolean flag = false;
+                    if(params.containsKey('translation')){
+                        ctx._source.original_text = ctx._source.full_text;
+                        ctx._source.original_lang = ctx._source.lang;
+                        ctx._source.full_text = params.translation;
+                        ctx._source.lang = params.destinationLanguage;
+                        flag = true;
+                    }
+                    if(flag){
+                        ctx['op'] = 'index';
+                    }
+                    else{
+                        ctx['op']= null;
+                    }
+                `,
+                params: {
+                    destinationLanguage: trans.destinationLanguage,
+                    sourceLanguage: trans.sourceLanguage,
+                    translation: trans.translation
                 }
-                if(flag){
-                    ctx['op'] = 'index';
-                }
-                else{
-                    ctx['op']= null;
-                }
-            `,
-            params: {
-                destinationLanguage: trans.destinationLanguage,
-                sourceLanguage: trans.sourceLanguage,
-                translation: trans.translation
             }
         }
     }).then((outdoc) => {
-        logger.info('/translate: ' + JSON.stringify(outdoc.result));
-        return res.status(200).send({result: outdoc.result});
+        logger.info('/translate: ' + JSON.stringify(outdoc.body.result));
+        return res.status(200).send({result: outdoc.body.result});
     }).catch((err) => {
         console.log('neg_response: ', err)
         logger.error('/translate: ' + JSON.stringify(err));
         return res.status(500).send({result: err});
     })
-})    
+})
 
 console.log('start back.js app in \t\t\t\t>>>>', "<<<<");
 http.createServer(app).listen(process.env.BACKPORT, process.env.BACKPATH, function (err) {
